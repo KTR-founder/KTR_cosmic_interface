@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>@KTR-founder — Cosmic Profile (Cinematic)</title>
+<style>
+:root{
+  --bg:#02030a; --neon:#54e0ff; --accent:#7feaff;
+  --card-bg: linear-gradient(180deg, rgba(6,10,16,0.6), rgba(2,6,10,0.55));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:#eaffff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+body{overflow:hidden}
+
+/* canvas stack */
+#stage{position:fixed;inset:0;z-index:0;overflow:hidden}
+canvas{position:absolute;left:0;top:0;display:block}
+.nebula{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+  radial-gradient(40% 30% at 15% 10%, rgba(10,30,50,0.16), transparent 8%),
+  radial-gradient(50% 40% at 85% 80%, rgba(5,12,25,0.22), transparent 12%);}
+
+/* profile card */
+.wrap{position:relative;z-index:3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{width:min(980px,95%);max-width:980px;border-radius:14px;padding:20px;display:flex;gap:18px;background:var(--card-bg);border:1px solid rgba(120,220,255,0.04);box-shadow:0 12px 48px rgba(0,0,0,0.6);backdrop-filter:blur(6px) saturate(120%);transform-origin:center;transition:transform 400ms ease,opacity 600ms ease;position:relative;overflow:visible}
+.avatar{width:120px;height:120px;flex:0 0 120px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.title{display:flex;align-items:center;gap:12px}
+h1{font-size:20px;margin:0;color:#dffcff}
+.handle{color:var(--accent);font-size:13px}
+.bio{color:rgba(210,240,255,0.92);font-size:13px;margin-top:4px}
+.stats{display:flex;gap:12px;margin-top:10px;color:#9ccfe2;font-size:13px}
+.pill{background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.02)}
+.grid{width:180px;display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+.grid .tile{width:56px;height:56px;border-radius:6px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+.terminal{margin-top:14px;background:rgba(0,0,0,0.14);padding:12px;border-radius:10px;font-family:ui-monospace,Menlo,Monaco,monospace;color:#cfffff;font-size:13px;border:1px solid rgba(80,200,255,0.03)}
+.terminal code{display:block;white-space:pre-wrap;line-height:1.6}
+.shards{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:visible}
+@media (max-width:720px){.card{flex-direction:column;align-items:center;padding:16px}.avatar{width:96px;height:96px;border-radius:12px}.grid{width:140px;grid-template-columns:repeat(3,40px)}.terminal{font-size:12px}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="stars"></canvas>
+  <canvas id="comets"></canvas>
+  <canvas id="fx"></canvas>
+</div>
+<div class="nebula"></div>
+
+<div class="wrap">
+  <div class="card" id="profileCard" role="region" aria-label="KTR profile preview">
+    <div class="avatar"><img id="avatarImg" src="avatar.jpg" alt="KTR avatar" onerror="this.style.opacity=0.0"></div>
+    <div class="meta">
+      <div class="title"><h1>@KTR-founder</h1><div class="handle">GitHub • AI Engineer • Space</div></div>
+      <div class="bio">KRISHNA-TECH-REVOLUTION — Cosmic profile demo. Brace for impact.</div>
+      <div class="stats" aria-hidden="true"><div class="pill">8 posts</div><div class="pill">16 followers</div><div class="pill">15 following</div></div>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:10px">
+        <div class="grid" aria-hidden="true"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+        <div style="flex:1"><div class="terminal" id="terminal"><code>
+pkg update && pkg upgrade        → Update packages
+pkg install python               → Install Python
+pkg install git                  → Install Git
+pkg install nano                 → For editing files
+ls                               → List files
+cd foldername                    → Enter folder
+cd ..                            → Go back
+mkdir KTR_CometSky               → Create folder
+nano index.html                  → Create / edit file
+git config --global user.name "KTR-founder"  → Set name
+git config --global user.email "jaarvish3000@gmail.com"  → Set email
+git init                         → Start Git
+git add .                        → Stage files
+git commit -m "Initial commit"   → Save change
+git push -u origin main          → Upload to GitHub
+        </code></div></div>
+      </div>
+      <div class="hint" style="margin-top:8px;color:rgba(170,230,255,0.6);font-size:12px">Tip: Reduce comet count in script for older phones.</div>
+    </div>
+    <div class="shards" id="shardsContainer" aria-hidden="true"></div>
+  </div>
+</div>
+
+<script>
+/* CONFIG */
+const MOBILE_MODE = /Mobi|Android/i.test(navigator.userAgent);
+const STAR_DENSITY = MOBILE_MODE ? 1500 : 900;
+const INITIAL_COMETS = MOBILE_MODE ? 3 : 6;
+const COMET_SPAWN_INTERVAL = MOBILE_MODE ? 2200 : 1400;
+const ASTEROID_AFTER = 8;
+let cometHits = 0;
+
+/* CANVAS SETUP */
+const starsCanvas = document.getElementById('stars');
+const cometsCanvas = document.getElementById('comets');
+const fxCanvas = document.getElementById('fx');
+const sCtx = starsCanvas.getContext('2d',{alpha:true});
+const cCtx = cometsCanvas.getContext('2d',{alpha:true});
+const fCtx = fxCanvas.getContext('2d',{alpha:true});
+function resizeAll(){ const w=innerWidth,h=innerHeight; [starsCanvas,cometsCanvas,fxCanvas].forEach(c=>{c.width=w;c.height=h;c.style.width=w+'px';c.style.height=h+'px'}); }
+resizeAll(); addEventListener('resize',resizeAll);
+
+/* STARS */
+const stars=[]; (function initStars(){ const area=innerWidth*innerHeight; const count=Math.max(60, Math.floor(area/STAR_DENSITY)); for(let i=0;i<count;i++){ stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.6+0.3,base:Math.random()*0.6+0.2,phase:Math.random()*Math.PI*2}); }})();
+function drawStars(time){ sCtx.clearRect(0,0,starsCanvas.width,starsCanvas.height); const g=sCtx.createLinearGradient(0,0,0,starsCanvas.height); g.addColorStop(0,'rgba(8,12,18,0.0)'); g.addColorStop(1,'rgba(0,0,0,0.6)'); sCtx.fillStyle=g; sCtx.fillRect(0,0,starsCanvas.width,starsCanvas.height); for(const st of stars){ const tw = st.base + Math.sin((time/900)+st.phase)*0.45; sCtx.beginPath(); sCtx.fillStyle = `rgba(200,255,255,${Math.max(0,Math.min(1,tw))})`; sCtx.arc(st.x,st.y,st.r,0,Math.PI*2); sCtx.fill(); }}
+
+/* COMET */
+class Comet{ constructor(init=true){ this.reset(init); } reset(init=false){ this.len=Math.random()*200+80; this.x = init ? Math.random()*innerWidth*0.3 - 200 : -this.len - Math.random()*300; this.y=Math.random()*innerHeight*0.45 + Math.random()*innerHeight*0.05; this.vx = Math.random()*6 + 5; this.vy = this.vx * (0.25 + Math.random()*0.5); this.opacity = Math.random()*0.45 + 0.45; this.glow = Math.random()*3 + 2.4; this.tail = []; } update(){ this.x+=this.vx; this.y+=this.vy; this.tail.unshift({x:this.x,y:this.y,o:this.opacity}); if(this.tail.length>28) this.tail.pop(); if(this.x - this.len > innerWidth || this.y - this.len > innerHeight) this.reset(); } draw(ctx){ for(let i=0;i<this.tail.length;i++){ const p=this.tail[i]; const t = i/this.tail.length; const size=(1-t)*this.glow*2.0; ctx.beginPath(); ctx.fillStyle = `rgba(140,240,255,${(1-t)*0.24})`; ctx.arc(p.x,p.y,Math.max(0.6,size),0,Math.PI*2); ctx.fill(); } const grad = ctx.createLinearGradient(this.x,this.y,this.x - this.len,this.y - this.len); grad.addColorStop(0,`rgba(235,255,255,${this.opacity})`); grad.addColorStop(1,'rgba(0,0,0,0)'); ctx.strokeStyle = grad; ctx.lineWidth=2.6; ctx.beginPath(); ctx.moveTo(this.x,this.y); ctx.lineTo(this.x - this.len, this.y - this.len); ctx.stroke(); ctx.beginPath(); ctx.fillStyle = `rgba(255,255,255,${Math.min(1,this.opacity+0.2)})`; ctx.arc(this.x,this.y,this.glow+1.4,0,Math.PI*2); ctx.fill(); } }
+let comets=[]; for(let i=0;i<INITIAL_COMETS;i++) comets.push(new Comet(true));
+
+/* ASTEROID */
+class Asteroid{ constructor(){ this.reset(); } reset(){ this.size=80+Math.random()*120; this.x=-this.size-Math.random()*400; this.y=20+Math.random()*120; this.vx=9+Math.random()*6; this.vy=2+Math.random()*4; this.rot=Math.random()*0.04; this.angle=0; this.active=false } launch(){ this.active=true } update(){ if(!this.active) return; this.x+=this.vx; this.y+=this.vy; this.angle+=this.rot; if(this.x>innerWidth+200) this.reset() } draw(ctx){ if(!this.active) return; ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.angle); const s=this.size; const grad=ctx.createLinearGradient(-s,-s,s,s); grad.addColorStop(0,'#6b432b'); grad.addColorStop(1,'#301a12'); ctx.fillStyle=grad; ctx.beginPath(); ctx.ellipse(0,0,s,s*0.8,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='rgba(0,0,0,0.12)'; ctx.beginPath(); ctx.arc(-s*0.2,-s*0.1,s*0.12,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(s*0.18,s*0.08,s*0.09,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+const asteroid = new Asteroid();
+
+/* PARTICLES & SHARDS */
+class Particle{ constructor(x,y,color,scale=1){ this.x=x;this.y=y;this.vx=(Math.random()-0.5)*6*scale;this.vy=(Math.random()-0.9)*6*scale; this.age=0; this.life=60+Math.random()*40; this.size=2+Math.random()*3*scale; this.color=color } update(){ this.x+=this.vx; this.y+=this.vy; this.vy+=0.12; this.age++ } draw(ctx){ ctx.globalAlpha = Math.max(0,1-this.age/this.life); ctx.beginPath(); ctx.fillStyle=this.color; ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1 } }
+let particles=[]; let shards=[]; let shardsActive=false;
+function createShards(rect){ const list=[]; const cols=8, rows=6; const w=rect.width/cols, h=rect.height/rows; for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ const sx = rect.left + c*w, sy = rect.top + r*h; list.push({ left:sx, top:sy, w:w, h:h, dx:(Math.random()-0.5)*innerWidth*0.7, dy:(-0.5-Math.random())*innerHeight*0.6, rot:(Math.random()-0.5)*90, speed:6+Math.random()*6, opacity:1 }); } } return list; }
+
+/* MAIN LOOP */
+function loop(t){
+  drawStars(t);
+  cCtx.fillStyle='rgba(0,0,0,0.18)'; cCtx.fillRect(0,0,cometsCanvas.width,cometsCanvas.height);
+  for(const cm of comets){ cm.update(); cm.draw(cCtx); if(checkCardCollision(cm.x,cm.y) && !shardsActive){ cometHits++; if(cometHits >= ASTEROID_AFTER){ scheduleAsteroid(); } } }
+  asteroid.update(); asteroid.draw(cCtx);
+  fCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+  for(let i=particles.length-1;i>=0;i--){ particles[i].update(); particles[i].draw(fCtx); if(particles[i].age>particles[i].life) particles.splice(i,1); }
+  if(shardsActive){ for(let i=0;i<shards.length;i++){ const s=shards[i]; s.dy+=0.18; s.left += s.dx*0.02; s.top += s.dy*0.02; s.rot += (s.speed*0.2); fCtx.save(); fCtx.globalAlpha = s.opacity; fCtx.translate(s.left + s.w/2, s.top + s.h/2); fCtx.rotate(s.rot * Math.PI/180); const g=fCtx.createLinearGradient(-s.w/2,-s.h/2,s.w/2,s.h/2); g.addColorStop(0,'rgba(255,255,255,0.02)'); g.addColorStop(1,'rgba(2,6,10,0.7)'); fCtx.fillStyle=g; fCtx.fillRect(-s.w/2,-s.h/2,s.w,s.h); fCtx.fillStyle='rgba(255,140,10,0.06)'; fCtx.fillRect(-s.w/2,-s.h/2,Math.min(6,s.w),s.h); fCtx.restore(); s.opacity -= 0.0025; } }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function drawStars(time){ sCtx.clearRect(0,0,starsCanvas.width,starsCanvas.height); const g=sCtx.createLinearGradient(0,0,0,starsCanvas.height); g.addColorStop(0,'rgba(8,12,18,0.0)'); g.addColorStop(1,'rgba(0,0,0,0.6)'); sCtx.fillStyle=g; sCtx.fillRect(0,0,starsCanvas.width,starsCanvas.height); for(const st of stars){ const tw = st.base + Math.sin((time/900)+st.phase)*0.45; sCtx.beginPath(); sCtx.fillStyle = `rgba(200,255,255,${Math.max(0,Math.min(1,tw))})`; sCtx.arc(st.x,st.y,st.r,0,Math.PI*2); sCtx.fill(); } }
+
+function checkCardCollision(x,y){ const el=document.getElementById('profileCard'); const rect=el.getBoundingClientRect(); return (x>rect.left+10 && x<rect.right-10 && y>rect.top+10 && y<rect.bottom-10); }
+function scheduleAsteroid(){ asteroid.x = -200; asteroid.y = innerHeight*0.08; asteroid.vx = 14; asteroid.vy=2; asteroid.rot=0.04; asteroid.launch(); setTimeout(()=>{ explosionAtCard(); }, 1000); }
+function explosionAtCard(){
+  const card=document.getElementById('profileCard'); const rect=card.getBoundingClientRect(); const cx = rect.left + rect.width/2; const cy = rect.top + rect.height/2;
+  for(let i=0;i<140;i++){ const col = (Math.random()>0.6) ? 'rgba(255,180,80,1)' : 'rgba(255,240,200,0.95)'; particles.push(new Particle(cx + (Math.random()-0.5)*40, cy + (Math.random()-0.5)*40, col, 1+Math.random()*1.8)); }
+  for(let i=0;i<80;i++){ particles.push(new Particle(cx + (Math.random()-0.5)*80, cy + (Math.random()-0.5)*80, 'rgba(30,30,40,0.9)', 1.6)); }
+  shards = createShards(rect); shardsActive = true;
+  card.style.transition='transform 700ms ease, opacity 800ms ease'; card.style.transform='scale(0.92) translateY(6px)'; card.style.opacity='0.06';
+  flashScreen();
+  document.dispatchEvent(new Event('shardsCreated'));
+}
+function flashScreen(){ const flash=document.createElement('div'); flash.style.position='fixed'; flash.style.left=0; flash.style.top=0; flash.style.width='100%'; flash.style.height='100%'; flash.style.background='radial-gradient(circle at 50% 40%, rgba(255,230,200,0.95), rgba(255,140,40,0.12) 20%, rgba(0,0,0,0) 45%)'; flash.style.zIndex=8; flash.style.pointerEvents='none'; document.body.appendChild(flash); setTimeout(()=>{ flash.style.transition='opacity 900ms'; flash.style.opacity=0; setTimeout(()=>flash.remove(),900); }, 60); }
+
+function spawnComet(){ comets.push(new Comet(false)); if(comets.length>18) comets.splice(0,comets.length-18); }
+setInterval(spawnComet, COMET_SPAWN_INTERVAL);
+setInterval(()=>{ if(!asteroid.active && cometHits >= ASTEROID_AFTER){ asteroid.launch(); } }, 1200);
+
+function resetScene(){ cometHits=0; particles=[]; shards=[]; shardsActive=false; asteroid.reset(); const card=document.getElementById('profileCard'); card.style.transform='scale(1)'; card.style.opacity='1'; fCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); for(let i=0;i<3;i++) comets.push(new Comet(false)); }
+function autoReplayController(){ const check=setInterval(()=>{ if(shardsActive && particles.length<6){ resetScene(); shardsActive=false; clearInterval(check); } }, 1200); }
+document.addEventListener('shardsCreated', autoReplayController);
+
+window.addEventListener('mousemove', e=>{ const cx = innerWidth/2, cy = innerHeight/2; const dx = (e.clientX - cx)/cx, dy = (e.clientY - cy)/cy; const cardElem=document.querySelector('.card'); cardElem.style.transform = `translate3d(${dx*6}px, ${dy*4}px,0)`; });
+
+/* create initial stars (re-run for canvas sizes) */
+(function initStarsAgain(){ /* stars already created above via IIFE earlier */ })();
+</script>
+</body>
+</html>
